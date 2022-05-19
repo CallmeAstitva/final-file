@@ -1,0 +1,134 @@
+<html>
+    <head>
+        <title>node s3 app</title>
+
+        <link
+          rel="stylesheet"
+          href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+          integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf"
+          crossorigin="anonymous"
+        />
+
+        <link
+          rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+          crossorigin="anonymous"
+        />
+        <style>
+        body {
+          background-color: #B3E8E5;
+        }
+
+        h1 {
+          font-size: 72px;
+          color: black;
+          background-color: #2F8F9D;
+          text-align: center;
+          padding: 10px 0 30px;
+          margin: 0 0 50px 0;
+        }
+
+        .do-file{
+          display:block;
+
+        }
+
+        </style>
+    </head>
+    <body onload="loadData()">
+      <h1>
+      File Uploader
+    </h1>
+
+    
+
+
+        <div>
+            <input type="file" id="s3-file" onchange="saveFile(this)"/>
+        </div>
+        <h4>Bucket Data</h4>
+        <div id="container" class="card do-files" style="width: 18rem;" >
+
+            <div id="bucket-data-list">
+
+            </div>
+
+        </div>
+
+        <script>
+            let list = [];
+            function saveFile(event) {
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData();
+                const file = event.files[0];
+                formData.append('s3-file', file);
+
+                xhr.onreadystatechange = (state) => {
+                    if(xhr.readyState === XMLHttpRequest.DONE) {
+                    }
+                }
+
+                xhr.timeout = 5000;
+                xhr.open('POST', '/upload-to-s3');
+                xhr.send(formData);
+            }
+
+            function loadData() {
+                getBucketObjectList();
+            }
+
+            function getBucketObjectList() {
+                getData('/all-files', (data = []) => {
+                    data = JSON.parse(data);
+                    list = data;
+                    const objectList = data.map((item, index) => {
+                        return `
+                            <div class="card" onclick="downloadFile(${index})">
+                                File Name: ${item.key} </br>
+                                File Size: ${item.size} </br>
+                                File Modified: ${item.lastModified}
+                            </div>
+                        `
+                    });
+                    document.getElementById('bucket-data-list').innerHTML = objectList;
+                });
+            }
+
+            function downloadFile(index) {
+                const fileName = (list[index] || {}).key;
+                getData(`/get-object-url/${fileName}`, (url) => {
+                    window.open(url, '_blank');
+                });
+            }
+
+
+            function getData(url, cb) {
+                const xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = state => {
+                    if(xhr.readyState === XMLHttpRequest.DONE) {
+                        cb(xhr.responseText);
+                    }
+                }
+                xhr.timeout = 10000;
+                xhr.open('GET', url);
+                xhr.send();
+            }
+        </script>
+        <script
+          src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+          integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+          crossorigin="anonymous"
+        ></script>
+        <script
+          src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+          integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+          crossorigin="anonymous"
+        ></script>
+        <script
+          src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+          integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+          crossorigin="anonymous"
+        ></script>
+    </body>
+</html>
